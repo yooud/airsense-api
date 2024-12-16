@@ -1,0 +1,23 @@
+﻿services:
+  api:
+    image: airsense.api
+    build:
+      context: .
+      dockerfile: Airsense.API/Dockerfile
+    depends_on:
+      - db
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=airsense1234
+      - DATABASE_NAME=airsensedb
+
+  db:
+    image: postgis/postgis:15-3.5
+    environment:
+      POSTGRES_DB: airsensedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: airsense1234
+    volumes:
+      - ./db/script.sql:/docker-entrypoint-initdb.d/script.sql
