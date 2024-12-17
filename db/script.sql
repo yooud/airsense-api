@@ -47,7 +47,7 @@ CREATE TABLE "environment_members" (
 CREATE TABLE "devices" (
                            "id" serial PRIMARY KEY,
                            "serial_number" varchar NOT NULL,
-                           "room_id" int NOT NULL,
+                           "room_id" int,
                            "active_at" timestamp
 );
 
@@ -68,9 +68,9 @@ CREATE TABLE "sensor_data" (
 
 ALTER TABLE "rooms" ADD FOREIGN KEY ("environment_id") REFERENCES "environments" ("id");
 
-ALTER TABLE "settings" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+ALTER TABLE "settings" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE CASCADE ;
 
-ALTER TABLE "sensors" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+ALTER TABLE "sensors" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE SET NULL;
 
 ALTER TABLE "sensors" ADD FOREIGN KEY ("type_id") REFERENCES "sensor_types" ("id");
 
@@ -78,7 +78,7 @@ ALTER TABLE "environment_members" ADD FOREIGN KEY ("member_id") REFERENCES "user
 
 ALTER TABLE "environment_members" ADD FOREIGN KEY ("environment_id") REFERENCES "environments" ("id");
 
-ALTER TABLE "devices" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id");
+ALTER TABLE "devices" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE SET NULL;
 
 ALTER TABLE "device_data" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id");
 
