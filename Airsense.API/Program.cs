@@ -47,6 +47,8 @@ builder.Services.AddScoped<IDbConnection>(_ => new NpgsqlConnection(builder.Conf
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+builder.Services.AddScoped<ISensorRepository, SensorRepository>();
+builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 
 builder.Services.AddScoped<IAuthService, FirebaseAuthService>();
 

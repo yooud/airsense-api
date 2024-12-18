@@ -18,4 +18,8 @@ public interface IRoomRepository
     public Task<bool> IsExistsAsync(int roomId, int envId);
     
     public Task DeleteAsync(int roomId);
+    
+    public Task<bool> IsHasAccessAsync(int userId, int roomId);
+    
+    public Task<ICollection<string>> GetAvailableTypesAsync(int roomId);
 }
