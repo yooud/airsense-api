@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Airsense.API.Models.Dto;
-using Airsense.API.Models.Dto.Room;
-using Airsense.API.Models.Dto.Sensor;
+using Airsense.API.Models.Dto.Device;
 using Airsense.API.Repository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,14 +9,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Airsense.API.Controllers;
 
 [ApiController]
-[Route("room/{roomId:int}/sensor")]
+[Route("room/{roomId:int}/device")]
 [Authorize]
-public class RoomSensorController(
+public class RoomDeviceController(
     IRoomRepository roomRepository,
-    ISensorRepository sensorRepository) : ControllerBase
+    IDeviceRepository deviceRepository) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetSensors(
+    public async Task<IActionResult> GetDevices(
         int roomId,
         [FromQuery][Range(0, int.MaxValue, ErrorMessage = "The skip parameter must be a non-negative integer.")] int skip = 0,
         [FromQuery][Range(0, int.MaxValue, ErrorMessage = "The count parameter must be a non-negative integer.")] int count = 10
@@ -33,23 +32,23 @@ public class RoomSensorController(
         if (!await roomRepository.IsHasAccessAsync(userId, roomId))
             return Forbid();
         
-        var sensors = await sensorRepository.GetAsync(roomId, count, skip);
-        var totalCount = await sensorRepository.CountAsync(roomId);
+        var devices = await deviceRepository.GetAsync(roomId, count, skip);
+        var totalCount = await deviceRepository.CountAsync(roomId);
         
         return Ok(new PaginatedListDto
         {
-            Data = sensors,
+            Data = devices,
             Pagination = new PaginatedListDto.Metadata
             {
                 Skip = skip,
-                Count = sensors.Count,
+                Count = devices.Count,
                 Total = totalCount
             }
         });
     }
     
     [HttpPost]
-    public async Task<IActionResult> AddSensor(int roomId, [FromBody] AddRequestDto request)
+    public async Task<IActionResult> AddDevice(int roomId, [FromBody] AddRequestDto request)
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
@@ -61,19 +60,19 @@ public class RoomSensorController(
         if (!await roomRepository.IsHasAccessAsync(userId, roomId))
             return Forbid();
         
-        var sensor = await sensorRepository.GetBySerialNumberAsync(request.SerialNumber);
-        if (sensor is null)
-            return BadRequest(new { message = "Sensor not found" });
+        var device = await deviceRepository.GetBySerialNumberAsync(request.SerialNumber);
+        if (device is null)
+            return NotFound(new { message = "Device not found" });
         
-        if (sensor.RoomId != null)
-            return BadRequest(new { message = "Sensor already in use" });
+        if (device.RoomId is not null)
+            return BadRequest(new { message = "Device already in use" });
         
-        await sensorRepository.UpdateRoomAsync(sensor.Id, roomId);
-        return StatusCode(201);
+        await deviceRepository.UpdateRoomAsync(roomId, device.Id);
+        return NoContent();
     }
     
-    [HttpDelete("{sensorId:int}")]
-    public async Task<IActionResult> RemoveSensor(int roomId, int sensorId)
+    [HttpDelete("{deviceId:int}")]
+    public async Task<IActionResult> RemoveDevice(int roomId, int deviceId)
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
@@ -85,14 +84,14 @@ public class RoomSensorController(
         if (!await roomRepository.IsHasAccessAsync(userId, roomId))
             return Forbid();
         
-        var sensor = await sensorRepository.GetByIdAsync(sensorId);
-        if (sensor is null)
-            return BadRequest(new { message = "Sensor not found" });
+        var device = await deviceRepository.GetByIdAsync(deviceId);
+        if (device is null)
+            return NotFound(new { message = "Device not found" });
         
-        if (sensor.RoomId != roomId)
-            return BadRequest(new { message = "Sensor not in this room" });
+        if (device.RoomId != roomId)
+            return BadRequest(new { message = "Device not in this room" });
         
-        await sensorRepository.DeleteRoomAsync(sensorId);
+        await deviceRepository.DeleteRoomAsync(device.Id);
         return NoContent();
     }
 }

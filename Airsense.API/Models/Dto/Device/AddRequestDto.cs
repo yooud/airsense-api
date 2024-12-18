@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Airsense.API.Models.Dto.Room;
+namespace Airsense.API.Models.Dto.Device;
 
 public class AddRequestDto
 {
-    [Length(20,20)]
+    [StringLength(20)]
     public string SerialNumber { get; set; }
 }
