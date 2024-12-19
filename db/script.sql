@@ -55,7 +55,8 @@ CREATE TABLE "device_data" (
                                "id" serial PRIMARY KEY,
                                "device_id" int NOT NULL,
                                "timestamp" timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-                               "value" real NOT NULL
+                               "value" real NOT NULL,
+                               "applied" bool NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE "sensor_data" (

@@ -1,4 +1,5 @@
 using System.Data;
+using Airsense.API.Models.Dto.Room;
 using Airsense.API.Models.Dto.Sensor;
 using Airsense.API.Models.Entity;
 using Dapper;
@@ -93,5 +94,116 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
     {
         const string sql = "UPDATE sensors SET room_id = NULL WHERE id = @sensorId";
         await connection.ExecuteAsync(sql, new { sensorId });
+    }
+    
+    public async Task AddDataAsync(int sensorId, SensorDataDto data)
+    {
+        const string sql = "INSERT INTO sensor_data (sensor_id, parameter, value) VALUES (@sensorId, @parameter, @value)";
+        await connection.ExecuteAsync(sql, new { sensorId, data.Parameter, data.Value });
+    }
+    
+    public async Task<ICollection<string>> GetTypesAsync(int sensorId)
+    {
+        const string sql = "SELECT parameters FROM sensor_types WHERE id = (SELECT type_id FROM sensors WHERE id = @sensorId)";
+        var types = await connection.QuerySingleAsync<string>(sql, new { sensorId });
+        return types.Split(", ").Select(p => p.Trim()).ToList();
+    }
+    
+    public async Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, string interval)
+    {
+        switch (interval.ToLower())
+        {
+            case "minute":
+                interval = "date_trunc('minute', sd.timestamp)";
+                break;
+            case "day":
+                interval = "date_trunc('day', sd.timestamp)";
+                break;
+            case "hour":
+            default:
+                interval = "date_trunc('hour', sd.timestamp)";
+                break;
+        }
+
+        var sql = $"""
+                   SELECT 
+                       s.id AS Id,
+                       s.serial_number AS SerialNumber,
+                       EXTRACT(EPOCH FROM {interval}) AS Timestamp,
+                       AVG(sd.value) AS Value
+                   FROM sensors s
+                   LEFT JOIN sensor_data sd ON sd.sensor_id = s.id
+                   WHERE s.room_id = @roomId
+                   AND sd.parameter = @parameter
+                   AND sd.timestamp BETWEEN @fromDate AND @toDate
+                   GROUP BY s.id, {interval}
+                   ORDER BY s.id, {interval}
+                   """;
+
+        var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { roomId, parameter, fromDate, toDate });
+
+        var history = historyData
+            .GroupBy(s => new { s.Id, s.SerialNumber })
+            .Select(g => new HistoryDeviceDto
+            {
+                Id = g.Key.Id,
+                SerialNumber = g.Key.SerialNumber,
+                History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x => new HistoryDeviceDataDto
+                {
+                    Timestamp = x.Timestamp!.Value,
+                    Value = x.Value!.Value
+                }).ToList()
+            });
+
+        return history.ToList();
+    }
+
+    public async Task<HistoryDeviceDto> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval)
+    {
+        switch (interval.ToLower())
+        {
+            case "minute":
+                interval = "date_trunc('minute', sd.timestamp)";
+                break;
+            case "day":
+                interval = "date_trunc('day', sd.timestamp)";
+                break;
+            case "hour":
+            default:
+                interval = "date_trunc('hour', sd.timestamp)";
+                break;
+        }
+
+        var sql = $"""
+                   SELECT 
+                       s.id AS Id,
+                       s.serial_number AS SerialNumber,
+                       EXTRACT(EPOCH FROM {interval}) AS Timestamp,
+                       AVG(sd.value) AS Value
+                   FROM sensors s
+                   LEFT JOIN sensor_data sd ON sd.sensor_id = s.id
+                   WHERE s.id = @sensorId
+                   AND sd.parameter = @parameter
+                   AND sd.timestamp BETWEEN @fromDate AND @toDate
+                   GROUP BY s.id, {interval}
+                   ORDER BY s.id, {interval}
+                   """;
+
+        var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { sensorId, parameter, fromDate, toDate });
+
+        var history = historyData
+            .GroupBy(s => new { s.Id, s.SerialNumber })
+            .Select(g => new HistoryDeviceDto
+            {
+                Id = g.Key.Id,
+                SerialNumber = g.Key.SerialNumber,
+                History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x => new HistoryDeviceDataDto
+                {
+                    Timestamp = x.Timestamp!.Value,
+                    Value = x.Value!.Value
+                }).ToList()
+            });
+
+        return history.First();
     }
 }

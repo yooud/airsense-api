@@ -1,3 +1,4 @@
+using Airsense.API.Models.Dto.Room;
 using Airsense.API.Models.Dto.Sensor;
 using Airsense.API.Models.Entity;
 
@@ -16,4 +17,12 @@ public interface ISensorRepository
     public Task UpdateRoomAsync(int sensorId, int roomId);
     
     public Task DeleteRoomAsync(int sensorId);
+    
+    public Task AddDataAsync(int sensorId, SensorDataDto data);
+    
+    public Task<ICollection<string>> GetTypesAsync(int sensorId);
+    
+    public Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, string period);
+    
+    public Task<HistoryDeviceDto> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval);
 }
