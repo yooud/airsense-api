@@ -47,7 +47,7 @@ public class RoomController(
             return Forbid();
 
         var types = await roomRepository.GetAvailableTypesAsync(roomId);
-        if (!types.Any(t => t.Equals(parameter)))
+        if (!types.Any(p => p.Name.Equals(parameter)))
             return BadRequest(new { message = "Parameter not found" });
         
         var curve = await settingsRepository.GetCurveAsync(roomId, parameter);
@@ -80,6 +80,10 @@ public class RoomController(
         
         if (!await roomRepository.IsHasAccessAsync(userId, roomId))
             return Forbid();
+        
+        var types = await roomRepository.GetAvailableTypesAsync(roomId);
+        if (!types.Any(p => p.Name.Equals(parameter)))
+            return BadRequest(new { message = "Parameter not found" });
         
         await settingsRepository.UpdateCurveAsync(roomId, parameter, request);
         return NoContent();
