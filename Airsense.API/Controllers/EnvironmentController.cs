@@ -50,7 +50,7 @@ public class EnvironmentController(IEnvironmentRepository environmentRepository)
             Name = request.Name
         };
         environment = await environmentRepository.CreateAsync(environment, userId);
-        return Created(nameof(GetEnvironment), new { environment.Id });
+        return CreatedAtAction(nameof(GetEnvironment), new { envId = environment.Id }, environment);
     }
     
     [HttpGet("{envId:int}")]
@@ -59,14 +59,20 @@ public class EnvironmentController(IEnvironmentRepository environmentRepository)
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
 
-        var environment = await environmentRepository.GetByIdAsync(envId, userId);
+        var environment = await environmentRepository.GetByIdAsync(envId);
         if (environment is null)
             return NotFound(new { message = "Environment not found" });
         
-        if (!await environmentRepository.IsMemberAsync(userId, envId))
+        var role = await environmentRepository.GetRoleAsync(userId, envId);
+        if (role is null)
             return Forbid();
         
-        return Ok(environment);
+        return Ok(new EnvironmentDto
+        {
+            Id = environment.Id,
+            Name = environment.Name,
+            Role = role
+        });
     }
 
     [HttpDelete("{envId:int}")]
@@ -75,15 +81,12 @@ public class EnvironmentController(IEnvironmentRepository environmentRepository)
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
 
-        var environment = await environmentRepository.GetByIdAsync(envId, userId);
+        var environment = await environmentRepository.GetByIdAsync(envId);
         if (environment is null)
             return NotFound(new { message = "Environment not found" });
         
         var role = await environmentRepository.GetRoleAsync(userId, envId);
-        if (role is null)
-            return Forbid();
-
-        if (!role.Equals("owner"))
+        if (role is null || !role.Equals("owner"))
             return Forbid();
 
         await environmentRepository.DeleteAsync(envId);
@@ -96,15 +99,12 @@ public class EnvironmentController(IEnvironmentRepository environmentRepository)
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
 
-        var environment = await environmentRepository.GetByIdAsync(envId, userId);
+        var environment = await environmentRepository.GetByIdAsync(envId);
         if (environment is null)
             return NotFound(new { message = "Environment not found" });
         
         var role = await environmentRepository.GetRoleAsync(userId, envId);
-        if (role is null)
-            return Forbid();
-
-        if (!role.Equals("owner"))
+        if (role is null || !role.Equals("owner"))
             return Forbid();
         
         await environmentRepository.UpdateAsync(envId, request.Name);

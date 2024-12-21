@@ -7,6 +7,4 @@ public class Device
     public string SerialNumber { get; set; }
 
     public int? RoomId { get; set; }
-
-    public DateTime ActiveAt { get; set; }
 }

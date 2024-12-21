@@ -33,22 +33,22 @@ public class EnvironmentRepository(IDbConnection connection) : IEnvironmentRepos
 
     public async Task<Environment> CreateAsync(Environment environment, int userId)
     {
-        const string sql = """
-                           DECLARE env_id INT;
-                           INSERT INTO environments (name) VALUES (@Name)
-                           RETURNING id INTO env_id;
-                           INSERT INTO environment_members (environment_id, member_id, role) VALUES (env_id, @userId, 'owner');
-                           SELECT 
-                               e.id AS Id,
-                               e.name AS Name
-                           FROM environments 
-                           WHERE id = env_id
-                           """;
-        var result = await connection.QuerySingleAsync<Environment>(sql, new { environment.Name, userId });
+        const string insertEnvSql = "INSERT INTO environments (name) VALUES (@Name) RETURNING id";
+        const string insertMemberSql = """
+                                       INSERT INTO environment_members (environment_id, member_id, role) VALUES (@envId, @userId, 'owner');
+                                       SELECT 
+                                           e.id AS Id,
+                                           e.name AS Name
+                                       FROM environments e
+                                       WHERE id = @envId
+                                       """;
+        
+        var envId = await connection.QuerySingleAsync<int>(insertEnvSql, new { environment.Name });
+        var result = await connection.QuerySingleAsync<Environment>(insertMemberSql, new { envId, userId });
         return result;
     }
 
-    public async Task<EnvironmentDto?> GetByIdAsync(int envId, int userId)
+    public async Task<Environment?> GetByIdAsync(int envId)
     {
         const string sql = """
                            SELECT 
@@ -57,10 +57,10 @@ public class EnvironmentRepository(IDbConnection connection) : IEnvironmentRepos
                                m.role AS Role
                            FROM environment_members m
                            JOIN environments e ON m.environment_id = e.id
-                           WHERE m.member_id = @userId AND m.environment_id = @envId
+                           WHERE m.environment_id = @envId
                            """;
         
-        var result = await connection.QueryFirstOrDefaultAsync<EnvironmentDto>(sql, new { envId, userId });
+        var result = await connection.QueryFirstOrDefaultAsync<Environment>(sql, new { envId });
         return result;
     }
 

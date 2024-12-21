@@ -11,7 +11,7 @@ public interface IEnvironmentRepository
     
     public Task<Environment> CreateAsync(Environment environment, int userId);
 
-    public Task<EnvironmentDto?> GetByIdAsync(int envId, int userId);
+    public Task<Environment?> GetByIdAsync(int envId);
     
     public Task<bool> IsMemberAsync(int userId, int envId);
     

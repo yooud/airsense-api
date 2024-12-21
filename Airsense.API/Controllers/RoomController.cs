@@ -2,12 +2,14 @@ using System.Security.Claims;
 using Airsense.API.Models.Dto.Room;
 using Airsense.API.Models.Dto.Settings;
 using Airsense.API.Repository;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Airsense.API.Controllers;
 
 [ApiController]
 [Route("room/{roomId:int}")]
+[Authorize]
 public class RoomController(
     IRoomRepository roomRepository,
     ISensorRepository sensorRepository,
@@ -53,11 +55,11 @@ public class RoomController(
         {
             curve = new CurveDto
             {
-                CriticalValue = 0,
-                Points =
+                CriticalValue = null,
+                Points = new List<CurvePointDto>
                 {
-                    new CurvePointDto { Value = 0, FanSpeed = 0 },
-                    new CurvePointDto { Value = 30, FanSpeed = 100 }
+                    new() { Value = 0, FanSpeed = 0 },
+                    new() { Value = 30, FanSpeed = 100 }
                 }
             };
             await settingsRepository.UpdateCurveAsync(roomId, parameter, curve);

@@ -6,7 +6,7 @@ public class RoomDto
 
     public string Name { get; set; }
 
-    public Dictionary<string, double> Params { get; set; }
+    public Dictionary<string, double>? Params { get; set; }
 
-    public double DeviceSpeed { get; set; }
+    public double? DeviceSpeed { get; set; }
 }

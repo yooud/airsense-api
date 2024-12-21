@@ -21,10 +21,10 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                            JOIN sensor_types t ON s.type_id = t.id
                            LEFT JOIN (
                                SELECT DISTINCT ON (sensor_id, parameter) 
-                                   sensor_id, parameter, value 
+                                   sensor_id, parameter, value, timestamp
                                FROM sensor_data
-                               ORDER BY timestamp DESC
-                           ) sd ON s.id = sd.sensor_id
+                               ORDER BY sensor_id, parameter, timestamp DESC
+                           ) sd ON s.id = sd.sensor_id AND sd.timestamp > NOW() - INTERVAL '1 minute'
                            WHERE s.room_id = @roomId
                            """;
         
@@ -60,12 +60,12 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                            SELECT 
                                s.id AS Id, 
                                s.serial_number AS SerialNumber,
-                               s.serial_number AS RoomId,
+                               s.room_id AS RoomId,
                                s.type_id AS TypeId
                            FROM sensors s
                            WHERE s.id = @sensorId
                            """;
-        var sensor = await connection.QueryFirstOrDefaultAsync(sql, new { sensorId });
+        var sensor = await connection.QueryFirstOrDefaultAsync<Sensor>(sql, new { sensorId });
         return sensor;
     }
 
@@ -80,7 +80,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                            FROM sensors s
                            WHERE s.serial_number = @serialNumber
                            """;
-        var sensor = await connection.QueryFirstOrDefaultAsync(sql, new { serialNumber });
+        var sensor = await connection.QueryFirstOrDefaultAsync<Sensor>(sql, new { serialNumber });
         return sensor;
     }
 

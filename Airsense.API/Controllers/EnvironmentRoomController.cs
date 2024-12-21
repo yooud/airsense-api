@@ -73,7 +73,15 @@ public class EnvironmentRoomController(
         };
         room = await roomRepository.CreateAsync(room);
         
-        return CreatedAtAction(nameof(GetRooms), new { room.EnvironmentId, room.Id }, null);
+        return CreatedAtAction(
+            nameof(GetRoom), 
+            new { envId = room.EnvironmentId, roomId = room.Id }, 
+            new RoomDto
+            {
+                Id = room.Id,
+                Name = room.Name
+            }
+        );
     }
     
     [HttpGet("{roomId:int}")]

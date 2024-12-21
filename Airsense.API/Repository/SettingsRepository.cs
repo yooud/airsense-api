@@ -16,7 +16,7 @@ public class SettingsRepository(IDbConnection connection) : ISettingsRepository
                            SET curve = @curve::json;
                            """;
         var curveJson = JsonConvert.SerializeObject(curve);
-        await connection.ExecuteAsync(sql, new { roomId, parameter, curveJson });
+        await connection.ExecuteAsync(sql, new { roomId, parameter, curve = curveJson });
     }
     
     public async Task<CurveDto?> GetCurveAsync(int roomId, string parameter)

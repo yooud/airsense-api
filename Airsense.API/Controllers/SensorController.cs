@@ -26,7 +26,7 @@ public class SensorController(
             return BadRequest(new { message = "Invalid parameter" });
         
         await sensorRepository.AddDataAsync(sensor.Id, request);
-        await Task.Run(() => sensorDataProcessingService.ProcessDataAsync(sensor.Id, request));
+        await Task.Run(() => sensorDataProcessingService.ProcessDataAsync(sensor.RoomId.Value, request));
         return NoContent();
     }
 }

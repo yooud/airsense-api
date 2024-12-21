@@ -77,6 +77,9 @@ public class EnvironmentMemberController(IEnvironmentRepository environmentRepos
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
         
+        if (userId == uid)
+            return BadRequest(new { message = "Cannot remove own member" });
+        
         var isExists = await environmentRepository.IsExistsAsync(envId);
         if (!isExists)
             return NotFound(new { message = "Environment not found" });
@@ -102,6 +105,9 @@ public class EnvironmentMemberController(IEnvironmentRepository environmentRepos
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });
+        
+        if (userId == uid)
+            return BadRequest(new { message = "Cannot update own role" });
         
         var isExists = await environmentRepository.IsExistsAsync(envId);
         if (!isExists)

@@ -39,6 +39,6 @@ public class AuthController(
         if (request.NotificationToken is not null)
             await userRepository.SetNotificationTokenAsync(uid, request.NotificationToken);
 
-        return isExists ? Ok() : StatusCode(201);
+        return isExists ? NoContent() : StatusCode(201);
     }
 }

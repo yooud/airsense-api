@@ -22,5 +22,8 @@
     volumes:
       - ./db/script.sql:/docker-entrypoint-initdb.d/script.sql
       - ./db/functions.sql:/docker-entrypoint-initdb.d/functions.sql
+      - ./db/script.sql:/docker-entrypoint-initdb.d/01_script.sql
+      - ./db/functions.sql:/docker-entrypoint-initdb.d/02_functions.sql
+      - ./db/data.sql:/docker-entrypoint-initdb.d/03_data.sql
     ports:
       - "5432:5432"

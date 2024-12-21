@@ -68,7 +68,11 @@ public class RoomDeviceController(
             return BadRequest(new { message = "Device already in use" });
         
         await deviceRepository.UpdateRoomAsync(roomId, device.Id);
-        return NoContent();
+        return StatusCode(201, new DeviceDto
+        {
+            Id = device.Id,
+            SerialNumber = device.SerialNumber
+        });
     }
     
     [HttpDelete("{deviceId:int}")]

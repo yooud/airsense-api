@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Airsense.API.Models.Dto;
-using Airsense.API.Models.Dto.Room;
 using Airsense.API.Models.Dto.Sensor;
 using Airsense.API.Repository;
 using Microsoft.AspNetCore.Authorization;
@@ -69,7 +68,11 @@ public class RoomSensorController(
             return BadRequest(new { message = "Sensor already in use" });
         
         await sensorRepository.UpdateRoomAsync(sensor.Id, roomId);
-        return StatusCode(201);
+        return StatusCode(201, new SensorDto
+        {
+            Id = sensor.Id,
+            SerialNumber = sensor.SerialNumber
+        });
     }
     
     [HttpDelete("{sensorId:int}")]

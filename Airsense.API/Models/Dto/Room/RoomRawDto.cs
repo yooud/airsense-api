@@ -6,9 +6,9 @@ public class RoomRawDto
     
     public string Name { get; set; }
     
-    public double DeviceSpeed { get; set; }
+    public double? DeviceSpeed { get; set; }
     
-    public string ParamKey { get; set; }
+    public string? ParamKey { get; set; }
     
-    public double ParamValue { get; set; }
+    public double? ParamValue { get; set; }
 }

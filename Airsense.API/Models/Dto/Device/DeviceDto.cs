@@ -6,7 +6,7 @@ public class DeviceDto
 
     public string SerialNumber { get; set; }
 
-    public double FanSpeed { get; set; }
+    public double? FanSpeed { get; set; }
 
-    public long ActiveAt { get; set; }
+    public long? ActiveAt { get; set; }
 }

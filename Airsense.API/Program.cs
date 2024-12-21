@@ -48,6 +48,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEnvironmentRepository, EnvironmentRepository>();
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
+builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 
 builder.Services.AddScoped<IAuthService, FirebaseAuthService>();

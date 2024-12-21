@@ -47,8 +47,7 @@ CREATE TABLE "environment_members" (
 CREATE TABLE "devices" (
                            "id" serial PRIMARY KEY,
                            "serial_number" varchar NOT NULL,
-                           "room_id" int,
-                           "active_at" timestamp
+                           "room_id" int
 );
 
 CREATE TABLE "device_data" (
@@ -56,7 +55,8 @@ CREATE TABLE "device_data" (
                                "device_id" int NOT NULL,
                                "timestamp" timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP),
                                "value" real NOT NULL,
-                               "applied" bool NOT NULL DEFAULT FALSE
+                               "applied" bool NOT NULL DEFAULT FALSE,
+                               "applied_at" timestamp
 );
 
 CREATE TABLE "sensor_data" (
@@ -67,20 +67,20 @@ CREATE TABLE "sensor_data" (
                                "value" real NOT NULL
 );
 
-ALTER TABLE "rooms" ADD FOREIGN KEY ("environment_id") REFERENCES "environments" ("id");
+ALTER TABLE "rooms" ADD FOREIGN KEY ("environment_id") REFERENCES "environments" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "settings" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE CASCADE ;
+ALTER TABLE "settings" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "sensors" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE SET NULL;
 
 ALTER TABLE "sensors" ADD FOREIGN KEY ("type_id") REFERENCES "sensor_types" ("id");
 
-ALTER TABLE "environment_members" ADD FOREIGN KEY ("member_id") REFERENCES "users" ("id");
+ALTER TABLE "environment_members" ADD FOREIGN KEY ("member_id") REFERENCES "users" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "environment_members" ADD FOREIGN KEY ("environment_id") REFERENCES "environments" ("id");
+ALTER TABLE "environment_members" ADD FOREIGN KEY ("environment_id") REFERENCES "environments" ("id") ON DELETE CASCADE;
 
 ALTER TABLE "devices" ADD FOREIGN KEY ("room_id") REFERENCES "rooms" ("id") ON DELETE SET NULL;
 
-ALTER TABLE "device_data" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id");
+ALTER TABLE "device_data" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "sensor_data" ADD FOREIGN KEY ("sensor_id") REFERENCES "sensors" ("id");
+ALTER TABLE "sensor_data" ADD FOREIGN KEY ("sensor_id") REFERENCES "sensors" ("id") ON DELETE CASCADE;

@@ -11,17 +11,20 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
     public async Task<ICollection<DeviceDto>> GetAsync(int roomId, int count, int skip)
     {
         const string sql = """
-                           SELECT 
+                           SELECT
                                d.id AS Id,
                                d.serial_number AS SerialNumber,
-                               d.active_at AS ActiveAt,
-                               dd.value AS FanSpeed
+                               EXTRACT(EPOCH FROM dd.applied_at) AS ActiveAt,
+                               dd.DeviceSpeed AS FanSpeed
                            FROM devices d
-                           JOIN (
-                               SELECT DISTINCT (device_id)
-                                   device_id,value
-                               FROM device_data
-                               ORDER BY timestamp DESC
+                           LEFT JOIN (
+                               SELECT DISTINCT ON (dd.device_id)
+                                   dd.device_id,
+                                   dd.applied_at,
+                                   dd.value AS DeviceSpeed
+                               FROM device_data dd
+                               WHERE dd.applied_at IS NOT NULL
+                               ORDER BY dd.device_id, dd.applied_at DESC, dd.value DESC
                            ) dd ON d.id = dd.device_id
                            WHERE d.room_id = @roomId
                            LIMIT @count 
@@ -37,8 +40,7 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                            SELECT 
                                d.id AS Id,
                                d.serial_number AS SerialNumber,
-                               d.room_id AS RoomId,
-                               d.active_at AS ActiveAt
+                               d.room_id AS RoomId
                            FROM devices d
                            WHERE d.id = @deviceId
                            """;
@@ -52,8 +54,7 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                            SELECT 
                                d.id AS Id,
                                d.serial_number AS SerialNumber,
-                               d.room_id AS RoomId,
-                               d.active_at AS ActiveAt
+                               d.room_id AS RoomId
                            FROM devices d
                            WHERE d.serial_number = @serialNumber
                            """;
@@ -97,11 +98,11 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                                """;
         const string updateSql = """
                                  UPDATE device_data 
-                                 SET applied = true 
-                                 WHERE device_id = (SELECT d.id FROM devices d WHERE d.serial_number = @serialNumber);
+                                 SET applied = true, applied_at = @timestamp
+                                 WHERE device_id = (SELECT d.id FROM devices d WHERE d.serial_number = @serialNumber) AND applied = false;
                                  """;
-        var speed = await connection.QueryFirstOrDefaultAsync<double>(selectSql, new { serialNumber });
-        await connection.ExecuteAsync(updateSql, new { serialNumber });
+        var speed = await connection.QueryFirstOrDefaultAsync<double?>(selectSql, new { serialNumber });
+        await connection.ExecuteAsync(updateSql, new { serialNumber, timestamp = DateTime.UtcNow });
         return speed;
     }
     
@@ -128,9 +129,10 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                        EXTRACT(EPOCH FROM {interval}) AS Timestamp,
                        AVG(dd.value) AS Value
                    FROM devices d
-                   LEFT JOIN sensor_data dd ON dd.sensor_id = d.id
+                   LEFT JOIN device_data dd ON dd.device_id = d.id
                    WHERE d.room_id = @roomId
                    AND dd.timestamp BETWEEN @fromDate AND @toDate
+                   AND dd.applied = true
                    GROUP BY d.id, {interval}
                    ORDER BY d.id, {interval}
                    """;
@@ -176,9 +178,10 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                        EXTRACT(EPOCH FROM {interval}) AS Timestamp,
                        AVG(dd.value) AS Value
                    FROM devices d
-                   LEFT JOIN sensor_data dd ON dd.sensor_id = d.id
+                   LEFT JOIN device_data dd ON dd.device_id = d.id
                    WHERE d.id = @deviceId
                    AND dd.timestamp BETWEEN @fromDate AND @toDate
+                   AND dd.applied = true
                    GROUP BY d.id, {interval}
                    ORDER BY d.id, {interval}
                    """;
