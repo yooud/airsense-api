@@ -32,4 +32,8 @@ public interface IEnvironmentRepository
     public Task RemoveMemberAsync(int envId, int userId);
     
     public Task UpdateMemberAsync(int envId, int userId, string role);
+    
+    public Task<ICollection<string>> GetMembersNotificationTokensAsync(int envId);
+    
+    public Task<Environment?> GetByRoomIdAsync(int roomId);
 }

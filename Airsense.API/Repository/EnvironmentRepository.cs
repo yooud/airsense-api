@@ -139,4 +139,30 @@ public class EnvironmentRepository(IDbConnection connection) : IEnvironmentRepos
         const string sql = "UPDATE environment_members SET role = @role WHERE environment_id = @envId AND member_id = @userId";
         await connection.ExecuteAsync(sql, new { envId, userId, role });
     }
+    
+    public async Task<ICollection<string>> GetMembersNotificationTokensAsync(int envId)
+    {
+        const string sql = """
+                           SELECT u.notification_token
+                           FROM environment_members m
+                           JOIN users u ON m.member_id = u.id
+                           WHERE m.environment_id = @envId
+                           """;
+        var result = await connection.QueryAsync<string>(sql, new { envId });
+        return result.ToList();
+    }
+    
+    public async Task<Environment?> GetByRoomIdAsync(int roomId)
+    {
+        const string sql = """
+                           SELECT 
+                               e.id AS Id,
+                               e.name AS Name
+                           FROM rooms r
+                           JOIN environments e ON e.id = r.environment_id
+                           WHERE r.id = @roomId
+                           """;
+        var result = await connection.QueryFirstOrDefaultAsync<Environment>(sql, new { roomId });
+        return result;
+    }
 }

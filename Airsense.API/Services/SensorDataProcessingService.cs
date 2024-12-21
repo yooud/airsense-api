@@ -6,7 +6,9 @@ namespace Airsense.API.Services;
 
 public class SensorDataProcessingService(
     IDeviceRepository deviceRepository,
-    ISettingsRepository settingsRepository) : ISensorDataProcessingService
+    IEnvironmentRepository environmentRepository,
+    ISettingsRepository settingsRepository,
+    INotificationService notificationService) : ISensorDataProcessingService
 {
     public async Task ProcessDataAsync(int roomId, SensorDataDto data)
     {
@@ -21,6 +23,25 @@ public class SensorDataProcessingService(
             return;
         
         await deviceRepository.AddDataAsync(roomId, fanSpeed.Value);
+
+        if (data.Value >= curve.CriticalValue)
+        {
+            var environment = await environmentRepository.GetByRoomIdAsync(roomId);
+            if (environment is null)
+                return;
+            
+            var membersTokens = await environmentRepository.GetMembersNotificationTokensAsync(environment.Id);
+            if (membersTokens.Count == 0)
+                return;
+            
+            await Task.Run(() => 
+                notificationService.SendNotificationAsync(
+                    membersTokens, 
+                    "Critical value exceeded", 
+                    $"Critical value exceeded for {data.Parameter} in  {environment.Name}"
+                )
+            );
+        }
     }
 
     private static int? GetFanSpeedByValue(ICollection<CurvePointDto> points, double value)

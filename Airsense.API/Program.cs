@@ -53,6 +53,7 @@ builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 
 builder.Services.AddScoped<IAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<ISensorDataProcessingService, SensorDataProcessingService>();
+builder.Services.AddScoped<INotificationService, FirebaseNotificationService>();
 
 var app = builder.Build();
 
