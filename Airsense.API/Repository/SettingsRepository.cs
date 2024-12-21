@@ -10,9 +10,11 @@ public class SettingsRepository(IDbConnection connection) : ISettingsRepository
     public async Task UpdateCurveAsync(int roomId, string parameter, object curve)
     {
         const string sql = """
-                           INSERT INTO settings (room_id, parameter, curve)
-                           VALUES (@roomId, @parameter, @curve::json)
-                           ON CONFLICT (room_id, parameter) DO UPDATE
+                           INSERT INTO settings (room_id, parameter_id, curve)
+                           SELECT @roomId, p.id, @curve::json
+                           FROM parameters p
+                           WHERE p.name = @parameter
+                           ON CONFLICT (room_id, parameter_id) DO UPDATE
                            SET curve = @curve::json;
                            """;
         var curveJson = JsonConvert.SerializeObject(curve);
@@ -21,7 +23,13 @@ public class SettingsRepository(IDbConnection connection) : ISettingsRepository
     
     public async Task<CurveDto?> GetCurveAsync(int roomId, string parameter)
     {
-        const string sql = "SELECT curve FROM settings WHERE room_id = @roomId AND parameter = @parameter";
+        const string sql = """
+                           SELECT s.curve 
+                           FROM settings s
+                           JOIN parameters p on p.id = s.parameter_id
+                           WHERE room_id = @roomId 
+                           AND p.name = @parameter
+                           """;
         var curveJson = await connection.QuerySingleOrDefaultAsync<string>(sql, new { roomId, parameter });
         if (curveJson is null)
             return null;

@@ -11,35 +11,59 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
     public async Task<ICollection<SensorDto>> GetAsync(int roomId, int count, int skip)
     {
         const string sql = """
-                           SELECT 
-                               s.id AS Id, 
+                           SELECT
+                               s.id AS Id,
                                s.serial_number AS SerialNumber,
-                               t.parameters AS Types,
-                               sd.parameter AS ParamKey,
-                               sd.value AS ParamValue
+                               t.name AS TypeName,
+                               sp.name AS SensorParameter,
+                               dp.name AS ParamKey,
+                               sd.value AS ParamValue,
+                               dp.unit AS ParamUnit,
+                               dp.min_value AS ParamMinValue,
+                               dp.max_value AS ParamMaxValue
                            FROM sensors s
                            JOIN sensor_types t ON s.type_id = t.id
+                           JOIN sensor_type_parameters tp ON tp.type_id = t.id
+                           JOIN parameters sp ON tp.parameter_id = sp.id
                            LEFT JOIN (
-                               SELECT DISTINCT ON (sensor_id, parameter) 
-                                   sensor_id, parameter, value, timestamp
+                               SELECT DISTINCT ON (sensor_id, parameter_id)
+                                   sensor_id, parameter_id, value, timestamp
                                FROM sensor_data
-                               ORDER BY sensor_id, parameter, timestamp DESC
+                               ORDER BY sensor_id, parameter_id, timestamp DESC
                            ) sd ON s.id = sd.sensor_id AND sd.timestamp > NOW() - INTERVAL '1 minute'
+                           LEFT JOIN parameters dp ON dp.id = sd.parameter_id
                            WHERE s.room_id = @roomId
                            """;
         
         var sensorData = await connection.QueryAsync<SensorRawDto>(sql, new { roomId });
 
         var sensors = sensorData
-            .GroupBy(s => new { s.Id, s.SerialNumber, s.Types })
+            .GroupBy(s => new { s.Id, s.SerialNumber, s.TypeName })
             .Select(g => new SensorDto
             {
                 Id = g.Key.Id,
+                TypeName = g.Key.TypeName,
                 SerialNumber = g.Key.SerialNumber,
-                Types = g.Key.Types.Split(", ").Select(p => p.Trim()).Distinct().ToList(),
-                Params = g
-                    .Where(x => x.ParamKey != null)
-                    .ToDictionary(x => x.ParamKey, x => x.ParamValue)
+                Types = g.Select(s => s.SensorParameter).ToList(),
+                Parameters = g
+                    .Where(x => x.ParamKey is not null)
+                    .DistinctBy(x => x.ParamKey)
+                    .Select(
+                        x => new ParameterDto
+                        {
+                            Name = x.ParamKey,
+                            Value = x.ParamValue.GetValueOrDefault(),
+                            MinValue = x.ParamMinValue.GetValueOrDefault(),
+                            MaxValue = x.ParamMaxValue.GetValueOrDefault(),
+                            Unit = x.ParamUnit
+                        }
+                    ).ToList()
+            })
+            .Select(room =>
+            {
+                if (room.Parameters == null || room.Parameters.Count == 0)
+                    room.Parameters = null;
+                return room;
             })
             .Skip(skip)
             .Take(count);
@@ -98,15 +122,27 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
     
     public async Task AddDataAsync(int sensorId, SensorDataDto data)
     {
-        const string sql = "INSERT INTO sensor_data (sensor_id, parameter, value) VALUES (@sensorId, @parameter, @value)";
+        const string sql = """
+                           INSERT INTO sensor_data (sensor_id, parameter_id, value) 
+                           SELECT @sensorId, p.id, @value
+                           FROM parameters p
+                           WHERE p.name = @parameter
+                           """;
         await connection.ExecuteAsync(sql, new { sensorId, data.Parameter, data.Value });
     }
     
     public async Task<ICollection<string>> GetTypesAsync(int sensorId)
     {
-        const string sql = "SELECT parameters FROM sensor_types WHERE id = (SELECT type_id FROM sensors WHERE id = @sensorId)";
-        var types = await connection.QuerySingleAsync<string>(sql, new { sensorId });
-        return types.Split(", ").Select(p => p.Trim()).ToList();
+        const string sql = """
+                           SELECT p.name
+                           FROM sensors s
+                           JOIN sensor_types t ON s.type_id = t.id
+                           JOIN sensor_type_parameters tp ON tp.type_id = t.id
+                           JOIN parameters p ON tp.parameter_id = p.id
+                           WHERE s.id = @sensorId
+                           """;
+        var types = await connection.QueryAsync<string>(sql, new { sensorId });
+        return types.ToList();
     }
     
     public async Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, string interval)
@@ -129,24 +165,28 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                    SELECT 
                        s.id AS Id,
                        s.serial_number AS SerialNumber,
+                       t.name AS TypeName,
                        EXTRACT(EPOCH FROM {interval}) AS Timestamp,
                        AVG(sd.value) AS Value
                    FROM sensors s
+                   JOIN sensor_types t ON s.type_id = t.id
                    LEFT JOIN sensor_data sd ON sd.sensor_id = s.id
+                   LEFT JOIN parameters dp ON sd.parameter_id = dp.id
                    WHERE s.room_id = @roomId
-                   AND sd.parameter = @parameter
+                   AND dp.name = @parameter
                    AND sd.timestamp BETWEEN @fromDate AND @toDate
-                   GROUP BY s.id, {interval}
+                   GROUP BY s.id, {interval}, t.name
                    ORDER BY s.id, {interval}
                    """;
 
         var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { roomId, parameter, fromDate, toDate });
 
         var history = historyData
-            .GroupBy(s => new { s.Id, s.SerialNumber })
+            .GroupBy(s => new { s.Id, s.TypeName, s.SerialNumber })
             .Select(g => new HistoryDeviceDto
             {
                 Id = g.Key.Id,
+                TypeName = g.Key.TypeName,
                 SerialNumber = g.Key.SerialNumber,
                 History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x => new HistoryDeviceDataDto
                 {
@@ -158,7 +198,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
         return history.ToList();
     }
 
-    public async Task<HistoryDeviceDto> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval)
+    public async Task<HistoryDeviceDto?> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval)
     {
         switch (interval.ToLower())
         {
@@ -178,24 +218,28 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                    SELECT 
                        s.id AS Id,
                        s.serial_number AS SerialNumber,
+                       t.name AS TypeName,
                        EXTRACT(EPOCH FROM {interval}) AS Timestamp,
                        AVG(sd.value) AS Value
                    FROM sensors s
+                   JOIN sensor_types t ON s.type_id = t.id 
                    LEFT JOIN sensor_data sd ON sd.sensor_id = s.id
+                   LEFT JOIN parameters dp ON sd.parameter_id = dp.id
                    WHERE s.id = @sensorId
-                   AND sd.parameter = @parameter
+                   AND dp.name = @parameter
                    AND sd.timestamp BETWEEN @fromDate AND @toDate
-                   GROUP BY s.id, {interval}
+                   GROUP BY s.id, {interval}, t.name
                    ORDER BY s.id, {interval}
                    """;
 
         var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { sensorId, parameter, fromDate, toDate });
 
         var history = historyData
-            .GroupBy(s => new { s.Id, s.SerialNumber })
+            .GroupBy(s => new { s.Id, s.TypeName, s.SerialNumber })
             .Select(g => new HistoryDeviceDto
             {
                 Id = g.Key.Id,
+                TypeName = g.Key.TypeName,
                 SerialNumber = g.Key.SerialNumber,
                 History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x => new HistoryDeviceDataDto
                 {
@@ -204,6 +248,6 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                 }).ToList()
             });
 
-        return history.First();
+        return history.FirstOrDefault();
     }
 }

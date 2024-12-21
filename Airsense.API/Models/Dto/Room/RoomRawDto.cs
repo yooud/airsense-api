@@ -11,4 +11,10 @@ public class RoomRawDto
     public string? ParamKey { get; set; }
     
     public double? ParamValue { get; set; }
+    
+    public string? ParamUnit { get; set; }
+
+    public double? ParamMinValue { get; set; }
+
+    public double? ParamMaxValue { get; set; }
 }

@@ -181,7 +181,7 @@ public class RoomController(
             return Forbid();
         
         var types = await roomRepository.GetAvailableTypesAsync(roomId);
-        if (!types.Any(t => t.Equals(parameter)))
+        if (!types.Any(p => p.Name.Equals(parameter)))
             return BadRequest(new { message = "Parameter not found" });
 
         var fromDate = from is null ? DateTime.UtcNow.AddDays(-3) : DateTime.UnixEpoch.AddMilliseconds(from.Value);
@@ -221,12 +221,16 @@ public class RoomController(
             return Forbid();
         
         var types = await roomRepository.GetAvailableTypesAsync(roomId);
-        if (!types.Any(t => t.Equals(parameter)))
+        if (!types.Any(p => p.Name.Equals(parameter)))
             return BadRequest(new { message = "Parameter not found" });
         
         var sensor = await sensorRepository.GetByIdAsync(sensorId);
         if (sensor is null)
             return NotFound(new { message = "Sensor not found" });
+
+        var sensorTypes = await sensorRepository.GetTypesAsync(sensor.Id);
+        if (!sensorTypes.Any(p => p.Equals(parameter)))
+            return BadRequest(new { message = "Parameter not found" });
         
         if (sensor.RoomId != roomId)
             return BadRequest(new { message = "Sensor not found in this room" });

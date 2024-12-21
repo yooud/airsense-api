@@ -1,4 +1,3 @@
--- Function to insert sample data into "users"
 CREATE OR REPLACE FUNCTION populate_users()
     RETURNS void AS $$
 BEGIN
@@ -12,20 +11,42 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to insert sample data into "sensor_types"
-CREATE OR REPLACE FUNCTION populate_sensor_types()
+CREATE OR REPLACE FUNCTION populate_parameters()
     RETURNS void AS $$
 BEGIN
-    INSERT INTO "sensor_types" ("parameters")
+    INSERT INTO "parameters" ("name", "unit", "min_value", "max_value")
     VALUES
-        ('temperature'),
-        ('humidity'),
-        ('pressure'),
-        ('temperature, humidity');
+        ('temperature', '°C', -50, 50),
+        ('humidity', '%', 0, 100),
+        ('pressure', 'hPa', 300, 1100);
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to insert sample data into "sensors"
+CREATE OR REPLACE FUNCTION populate_sensor_types()
+    RETURNS void AS $$
+BEGIN
+    INSERT INTO "sensor_types" ("name")
+    VALUES
+        ('Temperature Sensor'),
+        ('Humidity Sensor'),
+        ('Pressure Sensor'),
+        ('Temperature and Humidity Sensor');
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION populate_sensor_type_parameters()
+    RETURNS void AS $$
+BEGIN
+    INSERT INTO "sensor_type_parameters" ("type_id", "parameter_id")
+    VALUES
+        (1,1),
+        (2,2),
+        (3,3),
+        (4, 1),
+        (4, 2);
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION populate_sensors()
     RETURNS void AS $$
 BEGIN
@@ -39,20 +60,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to insert sample data into "devices"
 CREATE OR REPLACE FUNCTION populate_devices()
     RETURNS void AS $$
 BEGIN
-    INSERT INTO "devices" ("serial_number", "room_id", "active_at")
+    INSERT INTO "devices" ("serial_number", "room_id")
     SELECT
         substr(md5(random()::text), 0, 21),
-        null,
-        CURRENT_TIMESTAMP - (i * INTERVAL '1 day')
+        null
     FROM generate_series(1, 25) AS i;
 END;
 $$ LANGUAGE plpgsql;
 
 SELECT populate_users();
+SELECT populate_parameters();
 SELECT populate_sensor_types();
+SELECT populate_sensor_type_parameters();
 SELECT populate_sensors();
 SELECT populate_devices();

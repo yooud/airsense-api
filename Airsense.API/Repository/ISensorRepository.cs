@@ -24,5 +24,5 @@ public interface ISensorRepository
     
     public Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, string period);
     
-    public Task<HistoryDeviceDto> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval);
+    public Task<HistoryDeviceDto?> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval);
 }

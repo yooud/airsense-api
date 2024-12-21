@@ -1,4 +1,5 @@
 using Airsense.API.Models.Dto.Room;
+using Airsense.API.Models.Dto.Sensor;
 using Airsense.API.Models.Entity;
 
 namespace Airsense.API.Repository;
@@ -21,5 +22,5 @@ public interface IRoomRepository
     
     public Task<bool> IsHasAccessAsync(int userId, int roomId);
     
-    public Task<ICollection<string>> GetAvailableTypesAsync(int roomId);
+    public Task<ICollection<ParameterDto>> GetAvailableTypesAsync(int roomId);
 }
