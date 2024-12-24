@@ -34,4 +34,21 @@ public class UserRepository(IDbConnection connection) : IUserRepository
         const string sql = "UPDATE users SET notification_token = @token WHERE uid = @uid";
         await connection.ExecuteAsync(sql, new { uid, token });
     }
+    
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        const string sql = """
+                           SELECT 
+                               id AS Id, 
+                               uid AS Uid, 
+                               name AS Name, 
+                               email AS Email, 
+                               notification_token AS NotificationToken,
+                               created_at AS CreatedAt
+                           FROM users
+                           WHERE email = @email;
+                           """;
+        var result = await connection.QuerySingleOrDefaultAsync<User>(sql, new { email });
+        return result;
+    }
 }

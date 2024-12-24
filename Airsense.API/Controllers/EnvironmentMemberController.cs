@@ -11,7 +11,9 @@ namespace Airsense.API.Controllers;
 [ApiController]
 [Route("env/{envId:int}/member")]
 [Authorize]
-public class EnvironmentMemberController(IEnvironmentRepository environmentRepository) : ControllerBase
+public class EnvironmentMemberController(
+    IEnvironmentRepository environmentRepository,
+    IUserRepository userRepository) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetEnvironmentMembers(
@@ -45,8 +47,38 @@ public class EnvironmentMemberController(IEnvironmentRepository environmentRepos
         });
     }
     
+    [HttpPost("{email}")]
+    public async Task<IActionResult> AddEnvironmentMember(int envId, string email)
+    {
+        if (!int.TryParse(User.FindFirstValue("id"), out var userId))
+            return BadRequest(new { message = "You are not registered" });
+        
+        var isExists = await environmentRepository.IsExistsAsync(envId);
+        if (!isExists)
+            return NotFound(new { message = "Environment not found" });
+        
+        var role = await environmentRepository.GetRoleAsync(userId, envId);
+        switch (role)
+        {
+            case null:
+            case "user":
+                return Forbid();
+        }
+        
+        var user = await userRepository.GetByEmailAsync(email);
+        if (user is null)
+            return NotFound(new { message = "User not found" });
+
+        var isMember = await environmentRepository.IsMemberAsync(user.Id, envId);
+        if (isMember)
+            return BadRequest(new { message = "User is already a member" });
+        
+        await environmentRepository.AddMemberAsync(envId, user.Id);
+        return NoContent();
+    }
+    
     [HttpPost("{uid:int}")]
-    public async Task<IActionResult> AddEnvironmentMember(int envId, int uid)
+    public async Task<IActionResult> AddEnvironmentMemberById(int envId, int uid)
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
             return BadRequest(new { message = "You are not registered" });

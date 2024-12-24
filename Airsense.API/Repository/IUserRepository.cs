@@ -9,4 +9,6 @@ public interface IUserRepository
     public Task<User> CreateAsync(User user);
     
     public Task SetNotificationTokenAsync(string uid, string token);
+    
+    public Task<User?> GetByEmailAsync(string email);
 }
