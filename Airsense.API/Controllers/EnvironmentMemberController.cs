@@ -146,16 +146,8 @@ public class EnvironmentMemberController(
             return NotFound(new { message = "Environment not found" });
         
         var role = await environmentRepository.GetRoleAsync(userId, envId);
-        switch (role)
-        {
-            case null:
-            case "user":
-                return Forbid();
-            case "admin":
-                if (request.Role.ToString().Equals("admin"))
-                    return BadRequest(new { message = "Cannot update role to admin" });
-                break;
-        }
+        if (role is not null && !role.Equals("owner"))
+            return Forbid();
 
         var isMember = await environmentRepository.IsMemberAsync(uid, envId);
         if (!isMember)
