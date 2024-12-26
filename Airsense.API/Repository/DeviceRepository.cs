@@ -106,19 +106,25 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
         return speed;
     }
     
-    public async Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, DateTime fromDate, DateTime toDate, string interval)
+    public async Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(
+        int roomId, 
+        DateTime fromDate, 
+        DateTime toDate, 
+        HistoryDto.HistoryInterval interval
+    )
     {
-        switch (interval.ToLower())
+        string intervalSql;
+        switch (interval)
         {
-            case "minute":
-                interval = "date_trunc('minute', dd.timestamp)";
+            case HistoryDto.HistoryInterval.Minute:
+                intervalSql = "date_trunc('minute', dd.timestamp)";
                 break;
-            case "day":
-                interval = "date_trunc('day', dd.timestamp)";
+            case HistoryDto.HistoryInterval.Day:
+                intervalSql = "date_trunc('day', dd.timestamp)";
                 break;
-            case "hour":
+            case HistoryDto.HistoryInterval.Hour:
             default:
-                interval = "date_trunc('hour', dd.timestamp)";
+                intervalSql = "date_trunc('hour', dd.timestamp)";
                 break;
         }
 
@@ -126,15 +132,15 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                    SELECT 
                        d.id AS Id,
                        d.serial_number AS SerialNumber,
-                       EXTRACT(EPOCH FROM {interval}) AS Timestamp,
+                       EXTRACT(EPOCH FROM {intervalSql}) AS Timestamp,
                        AVG(dd.value) AS Value
                    FROM devices d
                    LEFT JOIN device_data dd ON dd.device_id = d.id
                    WHERE d.room_id = @roomId
                    AND dd.timestamp BETWEEN @fromDate AND @toDate
                    AND dd.applied = true
-                   GROUP BY d.id, {interval}
-                   ORDER BY d.id, {interval}
+                   GROUP BY d.id, {intervalSql}
+                   ORDER BY d.id, {intervalSql}
                    """;
 
         var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { roomId, fromDate, toDate });
@@ -155,19 +161,25 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
         return history.ToList();
     }
     
-    public async Task<object> GetDeviceHistoryAsync(int deviceId, DateTime fromDate, DateTime toDate, string interval)
+    public async Task<HistoryDeviceDto?> GetDeviceHistoryAsync(
+        int deviceId, 
+        DateTime fromDate, 
+        DateTime toDate, 
+        HistoryDto.HistoryInterval interval
+    )
     {
-        switch (interval.ToLower())
+        string intervalSql;
+        switch (interval)
         {
-            case "minute":
-                interval = "date_trunc('minute', dd.timestamp)";
+            case HistoryDto.HistoryInterval.Minute:
+                intervalSql = "date_trunc('minute', dd.timestamp)";
                 break;
-            case "day":
-                interval = "date_trunc('day', dd.timestamp)";
+            case HistoryDto.HistoryInterval.Day:
+                intervalSql = "date_trunc('day', dd.timestamp)";
                 break;
-            case "hour":
+            case HistoryDto.HistoryInterval.Hour:
             default:
-                interval = "date_trunc('hour', dd.timestamp)";
+                intervalSql = "date_trunc('hour', dd.timestamp)";
                 break;
         }
 
@@ -175,15 +187,15 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                    SELECT 
                        d.id AS Id,
                        d.serial_number AS SerialNumber,
-                       EXTRACT(EPOCH FROM {interval}) AS Timestamp,
+                       EXTRACT(EPOCH FROM {intervalSql}) AS Timestamp,
                        AVG(dd.value) AS Value
                    FROM devices d
                    LEFT JOIN device_data dd ON dd.device_id = d.id
                    WHERE d.id = @deviceId
                    AND dd.timestamp BETWEEN @fromDate AND @toDate
                    AND dd.applied = true
-                   GROUP BY d.id, {interval}
-                   ORDER BY d.id, {interval}
+                   GROUP BY d.id, {intervalSql}
+                   ORDER BY d.id, {intervalSql}
                    """;
 
         var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { deviceId, fromDate, toDate });
@@ -201,6 +213,6 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                 }).ToList()
             });
 
-        return history.First();
+        return history.FirstOrDefault();
     }
 }

@@ -22,7 +22,7 @@ public interface ISensorRepository
     
     public Task<ICollection<string>> GetTypesAsync(int sensorId);
     
-    public Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, string period);
+    public Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, HistoryDto.HistoryInterval interval);
     
-    public Task<HistoryDeviceDto?> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval);
+    public Task<HistoryDeviceDto?> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, HistoryDto.HistoryInterval interval);
 }

@@ -34,7 +34,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                            LEFT JOIN parameters dp ON dp.id = sd.parameter_id
                            WHERE s.room_id = @roomId
                            """;
-        
+
         var sensorData = await connection.QueryAsync<SensorRawDto>(sql, new { roomId });
 
         var sensors = sensorData
@@ -119,7 +119,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
         const string sql = "UPDATE sensors SET room_id = NULL WHERE id = @sensorId";
         await connection.ExecuteAsync(sql, new { sensorId });
     }
-    
+
     public async Task AddDataAsync(int sensorId, SensorDataDto data)
     {
         const string sql = """
@@ -130,7 +130,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                            """;
         await connection.ExecuteAsync(sql, new { sensorId, data.Parameter, data.Value });
     }
-    
+
     public async Task<ICollection<string>> GetTypesAsync(int sensorId)
     {
         const string sql = """
@@ -144,20 +144,27 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
         var types = await connection.QueryAsync<string>(sql, new { sensorId });
         return types.ToList();
     }
-    
-    public async Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, string parameter, DateTime fromDate, DateTime toDate, string interval)
+
+    public async Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(
+        int roomId,
+        string parameter,
+        DateTime fromDate,
+        DateTime toDate,
+        HistoryDto.HistoryInterval interval
+    )
     {
-        switch (interval.ToLower())
+        string intervalSql;
+        switch (interval)
         {
-            case "minute":
-                interval = "date_trunc('minute', sd.timestamp)";
+            case HistoryDto.HistoryInterval.Minute:
+                intervalSql = "date_trunc('minute', sd.timestamp)";
                 break;
-            case "day":
-                interval = "date_trunc('day', sd.timestamp)";
+            case HistoryDto.HistoryInterval.Day:
+                intervalSql = "date_trunc('day', sd.timestamp)";
                 break;
-            case "hour":
+            case HistoryDto.HistoryInterval.Hour:
             default:
-                interval = "date_trunc('hour', sd.timestamp)";
+                intervalSql = "date_trunc('hour', sd.timestamp)";
                 break;
         }
 
@@ -166,7 +173,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                        s.id AS Id,
                        s.serial_number AS SerialNumber,
                        t.name AS TypeName,
-                       EXTRACT(EPOCH FROM {interval}) AS Timestamp,
+                       EXTRACT(EPOCH FROM {intervalSql}) AS Timestamp,
                        AVG(sd.value) AS Value
                    FROM sensors s
                    JOIN sensor_types t ON s.type_id = t.id
@@ -175,8 +182,8 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                    WHERE s.room_id = @roomId
                    AND dp.name = @parameter
                    AND sd.timestamp BETWEEN @fromDate AND @toDate
-                   GROUP BY s.id, {interval}, t.name
-                   ORDER BY s.id, {interval}
+                   GROUP BY s.id, {intervalSql}, t.name
+                   ORDER BY s.id, {intervalSql}
                    """;
 
         var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { roomId, parameter, fromDate, toDate });
@@ -188,29 +195,37 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                 Id = g.Key.Id,
                 TypeName = g.Key.TypeName,
                 SerialNumber = g.Key.SerialNumber,
-                History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x => new HistoryDeviceDataDto
-                {
-                    Timestamp = x.Timestamp!.Value,
-                    Value = x.Value!.Value
-                }).ToList()
+                History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x =>
+                    new HistoryDeviceDataDto
+                    {
+                        Timestamp = x.Timestamp!.Value,
+                        Value = x.Value!.Value
+                    }).ToList()
             });
 
         return history.ToList();
     }
 
-    public async Task<HistoryDeviceDto?> GetSensorHistoryAsync(int sensorId, string parameter, DateTime fromDate, DateTime toDate, string interval)
+    public async Task<HistoryDeviceDto?> GetSensorHistoryAsync(
+        int sensorId,
+        string parameter,
+        DateTime fromDate,
+        DateTime toDate,
+        HistoryDto.HistoryInterval interval
+    )
     {
-        switch (interval.ToLower())
+        string intervalSql;
+        switch (interval)
         {
-            case "minute":
-                interval = "date_trunc('minute', sd.timestamp)";
+            case HistoryDto.HistoryInterval.Minute:
+                intervalSql = "date_trunc('minute', sd.timestamp)";
                 break;
-            case "day":
-                interval = "date_trunc('day', sd.timestamp)";
+            case HistoryDto.HistoryInterval.Day:
+                intervalSql = "date_trunc('day', sd.timestamp)";
                 break;
-            case "hour":
+            case HistoryDto.HistoryInterval.Hour:
             default:
-                interval = "date_trunc('hour', sd.timestamp)";
+                intervalSql = "date_trunc('hour', sd.timestamp)";
                 break;
         }
 
@@ -219,7 +234,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                        s.id AS Id,
                        s.serial_number AS SerialNumber,
                        t.name AS TypeName,
-                       EXTRACT(EPOCH FROM {interval}) AS Timestamp,
+                       EXTRACT(EPOCH FROM {intervalSql}) AS Timestamp,
                        AVG(sd.value) AS Value
                    FROM sensors s
                    JOIN sensor_types t ON s.type_id = t.id 
@@ -228,11 +243,12 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                    WHERE s.id = @sensorId
                    AND dp.name = @parameter
                    AND sd.timestamp BETWEEN @fromDate AND @toDate
-                   GROUP BY s.id, {interval}, t.name
-                   ORDER BY s.id, {interval}
+                   GROUP BY s.id, {intervalSql}, t.name
+                   ORDER BY s.id, {intervalSql}
                    """;
 
-        var historyData = await connection.QueryAsync<HistoryRawDto>(sql, new { sensorId, parameter, fromDate, toDate });
+        var historyData =
+            await connection.QueryAsync<HistoryRawDto>(sql, new { sensorId, parameter, fromDate, toDate });
 
         var history = historyData
             .GroupBy(s => new { s.Id, s.TypeName, s.SerialNumber })
@@ -241,11 +257,12 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                 Id = g.Key.Id,
                 TypeName = g.Key.TypeName,
                 SerialNumber = g.Key.SerialNumber,
-                History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x => new HistoryDeviceDataDto
-                {
-                    Timestamp = x.Timestamp!.Value,
-                    Value = x.Value!.Value
-                }).ToList()
+                History = g.Where(x => x.Timestamp is not null && x.Value is not null).Select(x =>
+                    new HistoryDeviceDataDto
+                    {
+                        Timestamp = x.Timestamp!.Value,
+                        Value = x.Value!.Value
+                    }).ToList()
             });
 
         return history.FirstOrDefault();

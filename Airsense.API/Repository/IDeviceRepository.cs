@@ -22,7 +22,7 @@ public interface IDeviceRepository
     
     public Task<double?> GetFanSpeedAsync(string serialNumber);
     
-    public Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, DateTime fromDate, DateTime toDate, string interval);
+    public Task<ICollection<HistoryDeviceDto>> GetRoomHistoryAsync(int roomId, DateTime fromDate, DateTime toDate, HistoryDto.HistoryInterval interval);
     
-    public Task<object> GetDeviceHistoryAsync(int deviceId, DateTime fromDate, DateTime toDate, string interval);
+    public Task<HistoryDeviceDto?> GetDeviceHistoryAsync(int deviceId, DateTime fromDate, DateTime toDate, HistoryDto.HistoryInterval interval);
 }

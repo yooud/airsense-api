@@ -12,6 +12,13 @@ public class HistoryDto
 
         public long To { get; set; }
 
-        public string Interval { get; set; }
+        public HistoryInterval Interval { get; set; }
+    }
+    
+    public enum HistoryInterval
+    {
+        Minute,
+        Hour,
+        Day,
     }
 }

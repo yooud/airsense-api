@@ -94,7 +94,7 @@ public class RoomController(
         int roomId, 
         [FromQuery] long? from, 
         [FromQuery] long? to,
-        [FromQuery] string interval = "hour"
+        [FromQuery] HistoryDto.HistoryInterval interval = HistoryDto.HistoryInterval.Hour
     )
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
@@ -129,7 +129,7 @@ public class RoomController(
         int deviceId,
         [FromQuery] long? from, 
         [FromQuery] long? to,
-        [FromQuery] string interval = "hour"
+        [FromQuery] HistoryDto.HistoryInterval interval = HistoryDto.HistoryInterval.Hour
     )
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
@@ -171,7 +171,7 @@ public class RoomController(
         string parameter, 
         [FromQuery] long? from, 
         [FromQuery] long? to,
-        [FromQuery] string interval = "hour"
+        [FromQuery] HistoryDto.HistoryInterval interval = HistoryDto.HistoryInterval.Hour
     )
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
@@ -199,7 +199,7 @@ public class RoomController(
             {
                 From = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds(),
                 To = new DateTimeOffset(toDate).ToUnixTimeMilliseconds(),
-                Interval = interval
+                Interval = HistoryDto.HistoryInterval.Hour
             }
         });
     }
@@ -211,7 +211,7 @@ public class RoomController(
         int sensorId,
         [FromQuery] long? from, 
         [FromQuery] long? to,
-        [FromQuery] string interval = "hour"
+        [FromQuery] HistoryDto.HistoryInterval interval = HistoryDto.HistoryInterval.Hour
     )
     {
         if (!int.TryParse(User.FindFirstValue("id"), out var userId))
@@ -250,7 +250,7 @@ public class RoomController(
             {
                 From = new DateTimeOffset(fromDate).ToUnixTimeMilliseconds(),
                 To = new DateTimeOffset(toDate).ToUnixTimeMilliseconds(),
-                Interval = interval
+                Interval = HistoryDto.HistoryInterval.Hour
             }
         });
     }
