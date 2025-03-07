@@ -1,0 +1,42 @@
+services:
+  api:
+    image: yooud/airsense-api:dev
+    build:
+      context: .
+      dockerfile: Airsense.API/Dockerfile
+      target: development
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      db:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+          ignore:
+            - db/
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: airsensedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: airsense1234
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d airsensedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/script.sql:/docker-entrypoint-initdb.d/01_script.sql
+      - ./db/functions.sql:/docker-entrypoint-initdb.d/02_functions.sql
+      - ./db/data.sql:/docker-entrypoint-initdb.d/03_data.sql
+
+volumes:
+  postgres-data:

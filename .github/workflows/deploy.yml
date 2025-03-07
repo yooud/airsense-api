@@ -1,0 +1,53 @@
+name: Deploy with Docker Compose
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Install AWS CLI
+        run: |
+          sudo snap install aws-cli --classic
+
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws configure set region auto
+          aws configure set endpoint_url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+
+      - name: Download appsettings.json from R2
+        run: |
+          aws s3 cp s3://${{ secrets.R2_BUCKET_NAME }}/airsense/appsettings.json ./Airsense.API/appsettings.json
+
+      - name: Download firebase-adminsdk-credentials.json from R2
+        run: |
+          aws s3 cp s3://${{ secrets.R2_BUCKET_NAME }}/airsense/firebase-adminsdk-credentials.json ./firebase-adminsdk-credentials.json
+
+      - name: Copy files to server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/airsense"
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:~/airsense
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "
+          cd ~/airsense &&
+          docker compose -f docker-compose.prod.yml pull || true &&
+          docker compose -f docker-compose.prod.yml down -v  &&
+          docker compose -f docker-compose.prod.yml up -d --build
+          "

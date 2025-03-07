@@ -13,6 +13,9 @@ COPY . .
 WORKDIR "/src/Airsense.API"
 RUN dotnet build "Airsense.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+FROM build AS development
+CMD ["dotnet", "run", "--no-launch-profile"]
+
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "Airsense.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
