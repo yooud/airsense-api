@@ -56,9 +56,9 @@ builder.Services.AddScoped<IAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<ISensorDataProcessingService, SensorDataProcessingService>();
 builder.Services.AddScoped<INotificationService, FirebaseNotificationService>();
 
-builder.Services.AddSingleton<MqttService>();
-builder.Services.AddSingleton<IMqttService>(sp => sp.GetRequiredService<MqttService>());
-builder.Services.AddHostedService(sp => sp.GetRequiredService<MqttService>());
+builder.Services.AddSingleton<SensorMqttService>();
+builder.Services.AddSingleton<IMqttService>(sp => sp.GetRequiredService<SensorMqttService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SensorMqttService>());
 
 builder.Services.AddSingleton(new MqttClientOptionsBuilder()
     .WithClientId(builder.Configuration["Mqtt:ClientId"])
