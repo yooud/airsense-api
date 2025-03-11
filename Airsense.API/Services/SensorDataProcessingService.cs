@@ -8,6 +8,7 @@ public class SensorDataProcessingService(
     IDeviceRepository deviceRepository,
     IEnvironmentRepository environmentRepository,
     ISettingsRepository settingsRepository,
+    IMqttService mqttService,
     INotificationService notificationService) : ISensorDataProcessingService
 {
     public async Task ProcessDataAsync(int roomId, SensorDataDto data)
@@ -23,6 +24,11 @@ public class SensorDataProcessingService(
             return;
         
         await deviceRepository.AddDataAsync(roomId, fanSpeed.Value);
+        await mqttService.PublishAsync($"room/{roomId}", new
+        {
+            fanSpeed,
+            timestamp = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds(),
+        });
 
         if (data.Value >= curve.CriticalValue)
         {

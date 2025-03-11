@@ -9,6 +9,8 @@
     depends_on:
       db:
         condition: service_healthy
+      mqtt:
+        condition: service_healthy
     ports:
       - "9100:8080"
 
@@ -28,6 +30,17 @@
       - ./db/script.sql:/docker-entrypoint-initdb.d/01_script.sql
       - ./db/functions.sql:/docker-entrypoint-initdb.d/02_functions.sql
       - ./db/data.sql:/docker-entrypoint-initdb.d/03_data.sql
+
+  mqtt:
+    image: emqx/emqx:latest
+    container_name: emqx
+    ports:
+      - "1883:1883"
+    healthcheck:
+      test: ["CMD", "emqx_ctl", "status"]
+      interval: 5s
+      timeout: 25s
+      retries: 5
 
 volumes:
   postgres-data:

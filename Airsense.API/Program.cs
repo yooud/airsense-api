@@ -7,6 +7,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using MQTTnet;
 using Npgsql;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -54,6 +55,16 @@ builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 builder.Services.AddScoped<IAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<ISensorDataProcessingService, SensorDataProcessingService>();
 builder.Services.AddScoped<INotificationService, FirebaseNotificationService>();
+
+builder.Services.AddSingleton<MqttService>();
+builder.Services.AddSingleton<IMqttService>(sp => sp.GetRequiredService<MqttService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<MqttService>());
+
+builder.Services.AddSingleton(new MqttClientOptionsBuilder()
+    .WithClientId(builder.Configuration["Mqtt:ClientId"])
+    .WithConnectionUri(builder.Configuration["Mqtt:ConnectionUri"])
+    .Build()
+);
 
 var app = builder.Build();
 
