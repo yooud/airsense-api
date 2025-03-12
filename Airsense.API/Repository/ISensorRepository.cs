@@ -18,7 +18,9 @@ public interface ISensorRepository
     
     public Task DeleteRoomAsync(int sensorId);
     
-    public Task AddDataAsync(int sensorId, SensorDataDto data);
+    public Task AddDataAsync(int sensorId, string parameter, SensorDataDto data);
+
+    public Task<bool> IsExistsBySentAt(int sensorId, long sentAt);
     
     public Task<ICollection<string>> GetTypesAsync(int sensorId);
     

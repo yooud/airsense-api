@@ -64,7 +64,8 @@ CREATE TABLE "sensor_data" (
                                "sensor_id" int NOT NULL,
                                "timestamp" timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP),
                                "parameter_id" int NOT NULL,
-                               "value" real NOT NULL
+                               "value" real NOT NULL,
+                               "sent_at" timestamp NOT NULL
 );
 
 CREATE TABLE "parameters" (

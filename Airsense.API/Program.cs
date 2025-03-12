@@ -53,7 +53,7 @@ builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
 
 builder.Services.AddScoped<IAuthService, FirebaseAuthService>();
-builder.Services.AddScoped<ISensorDataProcessingService, SensorDataProcessingService>();
+builder.Services.AddScoped<ISensorService, SensorService>();
 builder.Services.AddScoped<INotificationService, FirebaseNotificationService>();
 
 builder.Services.AddSingleton<SensorMqttService>();
