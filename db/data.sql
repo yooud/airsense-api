@@ -50,24 +50,31 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION populate_sensors()
     RETURNS void AS $$
 BEGIN
-    INSERT INTO "sensors" ("serial_number", "room_id", "type_id")
-    SELECT
-        substr(md5(random()::text), 0, 21),
-        (SELECT id FROM "rooms" ORDER BY RANDOM() LIMIT 1),
-        type_id
-    FROM generate_series(1, 5) AS i,
-         (SELECT id AS type_id FROM "sensor_types") AS types;
+    INSERT INTO "sensors" ("serial_number", "type_id", "secret")
+    SELECT s.serial,
+           s.type_id,
+           md5(s.serial || s.serial)
+    FROM (
+         SELECT
+             substr(md5(random()::text), 0, 21) AS serial,
+             type_id
+         FROM generate_series(1, 5) AS i,
+              (SELECT id AS type_id FROM "sensor_types") AS types
+    ) s;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION populate_devices()
     RETURNS void AS $$
 BEGIN
-    INSERT INTO "devices" ("serial_number", "room_id")
-    SELECT
-        substr(md5(random()::text), 0, 21),
-        null
-    FROM generate_series(1, 25) AS i;
+    INSERT INTO "devices" ("serial_number", "secret")
+    SELECT s.serial,
+           md5(s.serial || s.serial)
+    FROM (
+         SELECT
+             substr(md5(random()::text), 0, 21) AS serial
+         FROM generate_series(1, 25) AS i
+    ) s;
 END;
 $$ LANGUAGE plpgsql;
 

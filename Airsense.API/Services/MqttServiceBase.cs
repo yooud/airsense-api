@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http.Json;
@@ -47,6 +48,9 @@ public abstract class MqttServiceBase(
         _mqttClient.ConnectedAsync += OnConnected;
         _mqttClient.ApplicationMessageReceivedAsync += HandleReceivedMessageAsync;
 
+        mqttOptions.Credentials =
+            new MqttClientCredentials("api", Encoding.UTF8.GetBytes(AuthMqttService.GetApiCredentials()));
+
         await _mqttClient.ConnectAsync(mqttOptions, stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -89,5 +93,18 @@ public abstract class MqttServiceBase(
                 .Build();
             await _mqttClient.PublishAsync(message);
         }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_mqttClient is not null && _mqttClient.IsConnected)
+        {
+            var disconnectOptions = new MqttClientDisconnectOptionsBuilder()
+                .WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection)
+                .Build();
+            await _mqttClient.DisconnectAsync(disconnectOptions, cancellationToken);
+        }
+
+        await base.StopAsync(cancellationToken);
     }
 }

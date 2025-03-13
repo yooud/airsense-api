@@ -9,4 +9,6 @@ public class Sensor
     public int? RoomId { get; set; }
 
     public int TypeId { get; set; }
+
+    public string Secret { get; set; }
 }

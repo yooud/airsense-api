@@ -100,7 +100,8 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                                s.id AS Id, 
                                s.serial_number AS SerialNumber,
                                s.room_id AS RoomId,
-                               s.type_id AS TypeId
+                               s.type_id AS TypeId,
+                               s.secret AS Secret
                            FROM sensors s
                            WHERE s.serial_number = @serialNumber
                            """;
