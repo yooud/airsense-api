@@ -46,6 +46,7 @@ public abstract class MqttServiceBase(
         _mqttClient = _mqttFactory.CreateMqttClient();
 
         _mqttClient.ConnectedAsync += OnConnected;
+        _mqttClient.DisconnectedAsync += OnDisconnected;
         _mqttClient.ApplicationMessageReceivedAsync += HandleReceivedMessageAsync;
 
         mqttOptions.Credentials =
@@ -75,6 +76,13 @@ public abstract class MqttServiceBase(
             });
         }
     }
+    
+    private async Task OnDisconnected(MqttClientDisconnectedEventArgs e)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        if (_mqttClient is not null) 
+            await _mqttClient.ConnectAsync(mqttOptions, CancellationToken.None);
+    } 
 
     protected T? Deserialize<T>(string data) => JsonSerializer.Deserialize<T>(data, jsonOptions.Value.JsonSerializerOptions);
 
