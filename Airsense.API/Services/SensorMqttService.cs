@@ -1,7 +1,7 @@
 using System.Text;
 using Airsense.API.Models.Dto.Sensor;
 using Airsense.API.Repository;
-using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 

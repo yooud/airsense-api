@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Protocol;
@@ -76,7 +76,7 @@ public abstract class MqttServiceBase(
         }
     }
 
-    protected T? Deserialize<T>(string data) => JsonSerializer.Deserialize<T>(data, jsonOptions.Value.SerializerOptions);
+    protected T? Deserialize<T>(string data) => JsonSerializer.Deserialize<T>(data, jsonOptions.Value.JsonSerializerOptions);
 
     protected IServiceProvider GetServiceProvider() => serviceProvider;
 
