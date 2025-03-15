@@ -4,15 +4,16 @@ using Airsense.API.Repository;
 
 namespace Airsense.API.Services;
 
-public class SensorDataProcessingService(
+public class SensorService(
     IDeviceRepository deviceRepository,
     IEnvironmentRepository environmentRepository,
     ISettingsRepository settingsRepository,
-    INotificationService notificationService) : ISensorDataProcessingService
+    IMqttService mqttService,
+    INotificationService notificationService) : ISensorService
 {
-    public async Task ProcessDataAsync(int roomId, SensorDataDto data)
+    public async Task ProcessDataAsync(int roomId, string parameter, SensorDataDto data)
     {
-        var curve = await settingsRepository.GetCurveAsync(roomId, data.Parameter);
+        var curve = await settingsRepository.GetCurveAsync(roomId, parameter);
 
         if (curve?.Points == null || curve.Points.Count == 0)
             return;
@@ -21,24 +22,29 @@ public class SensorDataProcessingService(
 
         if (!fanSpeed.HasValue)
             return;
-        
+
         await deviceRepository.AddDataAsync(roomId, fanSpeed.Value);
+        await mqttService.PublishAsync($"room/{roomId}", new
+        {
+            fanSpeed,
+            timestamp = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds(),
+        });
 
         if (data.Value >= curve.CriticalValue)
         {
             var environment = await environmentRepository.GetByRoomIdAsync(roomId);
             if (environment is null)
                 return;
-            
+
             var membersTokens = await environmentRepository.GetMembersNotificationTokensAsync(environment.Id);
             if (membersTokens.Count == 0)
                 return;
-            
-            await Task.Run(() => 
+
+            await Task.Run(() =>
                 notificationService.SendNotificationAsync(
-                    membersTokens, 
-                    "Critical value exceeded", 
-                    $"Critical value exceeded for {data.Parameter} in  {environment.Name}"
+                    membersTokens,
+                    "Critical value exceeded",
+                    $"Critical value exceeded for {parameter} in  {environment.Name}"
                 )
             );
         }

@@ -100,7 +100,8 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                                s.id AS Id, 
                                s.serial_number AS SerialNumber,
                                s.room_id AS RoomId,
-                               s.type_id AS TypeId
+                               s.type_id AS TypeId,
+                               s.secret AS Secret
                            FROM sensors s
                            WHERE s.serial_number = @serialNumber
                            """;
@@ -120,15 +121,28 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
         await connection.ExecuteAsync(sql, new { sensorId });
     }
 
-    public async Task AddDataAsync(int sensorId, SensorDataDto data)
+    public async Task AddDataAsync(int sensorId, string parameter, SensorDataDto data)
     {
         const string sql = """
-                           INSERT INTO sensor_data (sensor_id, parameter_id, value) 
-                           SELECT @sensorId, p.id, @value
+                           INSERT INTO sensor_data (sensor_id, parameter_id, value, sent_at)
+                           SELECT @sensorId, p.id, @value, to_timestamp(@sentAt)
                            FROM parameters p
                            WHERE p.name = @parameter
                            """;
-        await connection.ExecuteAsync(sql, new { sensorId, data.Parameter, data.Value });
+        await connection.ExecuteAsync(sql, new { sensorId, parameter, data.Value, data.SentAt });
+    }
+
+    public async Task<bool> IsExistsBySentAt(int sensorId, long sentAt)
+    {
+        const string sql = """
+                           SELECT 1
+                           FROM sensor_data sd
+                           WHERE sd.sensor_id = @sensorId AND
+                               sent_at = to_timestamp(@sentAt)
+                           """;
+
+        var result = await connection.QueryAsync(sql, new { sensorId, sentAt });
+        return result.SingleOrDefault() != null;
     }
 
     public async Task<ICollection<string>> GetTypesAsync(int sensorId)

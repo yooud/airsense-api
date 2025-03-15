@@ -29,7 +29,8 @@ CREATE TABLE "sensors" (
                            "id" serial PRIMARY KEY,
                            "serial_number" varchar NOT NULL,
                            "room_id" int,
-                           "type_id" int NOT NULL
+                           "type_id" int NOT NULL,
+                           "secret" varchar NOT NULL
 );
 
 CREATE TABLE "sensor_types" (
@@ -47,7 +48,8 @@ CREATE TABLE "environment_members" (
 CREATE TABLE "devices" (
                            "id" serial PRIMARY KEY,
                            "serial_number" varchar NOT NULL,
-                           "room_id" int
+                           "room_id" int,
+                           "secret" varchar NOT NULL
 );
 
 CREATE TABLE "device_data" (
@@ -64,7 +66,8 @@ CREATE TABLE "sensor_data" (
                                "sensor_id" int NOT NULL,
                                "timestamp" timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP),
                                "parameter_id" int NOT NULL,
-                               "value" real NOT NULL
+                               "value" real NOT NULL,
+                               "sent_at" timestamp NOT NULL
 );
 
 CREATE TABLE "parameters" (

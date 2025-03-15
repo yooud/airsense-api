@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Airsense.API.Models.Dto;
 using Airsense.API.Models.Dto.Device;
 using Airsense.API.Repository;
+using Airsense.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +14,8 @@ namespace Airsense.API.Controllers;
 [Authorize]
 public class RoomDeviceController(
     IRoomRepository roomRepository,
-    IDeviceRepository deviceRepository) : ControllerBase
+    IDeviceRepository deviceRepository,
+    IMqttService mqttService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetDevices(
@@ -96,6 +98,11 @@ public class RoomDeviceController(
             return BadRequest(new { message = "Device not in this room" });
         
         await deviceRepository.DeleteRoomAsync(device.Id);
+        await mqttService.PublishAsync($"device/{deviceId}", new
+        {
+            Action = "disconnect"
+        });
+        
         return NoContent();
     }
 }

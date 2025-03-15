@@ -54,7 +54,8 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                            SELECT 
                                d.id AS Id,
                                d.serial_number AS SerialNumber,
-                               d.room_id AS RoomId
+                               d.room_id AS RoomId,
+                               d.secret AS Secret
                            FROM devices d
                            WHERE d.serial_number = @serialNumber
                            """;
