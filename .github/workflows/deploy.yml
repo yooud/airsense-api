@@ -41,7 +41,7 @@ jobs:
       - name: Copy files to server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "mkdir -p ~/airsense"
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:~/airsense
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:~/airsense
 
       - name: Deploy with Docker Compose
         run: |
