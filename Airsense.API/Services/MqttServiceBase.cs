@@ -88,7 +88,8 @@ public abstract class MqttServiceBase(
 
     protected IServiceProvider GetServiceProvider() => serviceProvider;
 
-    public Task PublishAsync(string topic, object payload) => PublishAsync(topic, JsonSerializer.Serialize(payload));
+    public Task PublishAsync(string topic, object payload) => 
+        PublishAsync(topic, JsonSerializer.Serialize(payload, jsonOptions.Value.JsonSerializerOptions));
 
     public async Task PublishAsync(string topic, string payload)
     {
