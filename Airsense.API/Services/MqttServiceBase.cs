@@ -18,11 +18,11 @@ public abstract class MqttServiceBase(
     private IMqttClient? _mqttClient;
     private readonly ConcurrentDictionary<string, Func<MqttApplicationMessageReceivedEventArgs, Task>> _callbacks = new();
 
-    public void RegisterCallback(string topicFilter, Func<MqttApplicationMessageReceivedEventArgs, Task> callback) => _callbacks[topicFilter] = callback;
+    protected void RegisterCallback(string topicFilter, Func<MqttApplicationMessageReceivedEventArgs, Task> callback) => _callbacks[topicFilter] = callback;
 
     private async Task HandleReceivedMessageAsync(MqttApplicationMessageReceivedEventArgs e)
     {
-        string topic = e.ApplicationMessage.Topic;
+        var topic = e.ApplicationMessage.Topic;
 
         foreach (var kvp in _callbacks)
             if (IsTopicMatch(kvp.Key, topic))
@@ -34,7 +34,7 @@ public abstract class MqttServiceBase(
         if (filter.Equals(topic, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        string regexPattern = "^" + Regex.Escape(filter)
+        var regexPattern = "^" + Regex.Escape(filter)
             .Replace("\\+", "[^/]+")
             .Replace("\\#", ".*") + "$";
 

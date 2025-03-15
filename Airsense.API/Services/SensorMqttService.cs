@@ -40,8 +40,8 @@ public class SensorMqttService : MqttServiceBase
         if (!types.Contains(parameter))
             return;
 
-        var isAlreadyProccesed = await sensorRepository.IsExistsBySentAt(sensor.Id, payload.SentAt);
-        if (isAlreadyProccesed)
+        var isAlreadyProcessed = await sensorRepository.IsExistsBySentAt(sensor.Id, payload.SentAt);
+        if (isAlreadyProcessed)
             return;
 
         await sensorRepository.AddDataAsync(sensor.Id, parameter, payload);

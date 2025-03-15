@@ -114,11 +114,10 @@ public class AuthMqttService(IDeviceRepository deviceRepository, ISensorReposito
 
     private static string ComputeMd5Hash(string input)
     {
-        using MD5 md5 = MD5.Create();
-        byte[] inputBytes = Encoding.UTF8.GetBytes(input);
-        byte[] hashBytes = md5.ComputeHash(inputBytes);
+        var inputBytes = Encoding.UTF8.GetBytes(input);
+        var hashBytes = MD5.HashData(inputBytes);
 
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         foreach (var b in hashBytes)
             sb.Append(b.ToString("x2"));
         return sb.ToString();
