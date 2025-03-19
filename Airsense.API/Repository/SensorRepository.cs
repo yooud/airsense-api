@@ -33,6 +33,7 @@ public class SensorRepository(IDbConnection connection) : ISensorRepository
                            ) sd ON s.id = sd.sensor_id AND sd.timestamp > NOW() - INTERVAL '1 minute'
                            LEFT JOIN parameters dp ON dp.id = sd.parameter_id
                            WHERE s.room_id = @roomId
+                           ORDER BY s.id
                            """;
 
         var sensorData = await connection.QueryAsync<SensorRawDto>(sql, new { roomId });
