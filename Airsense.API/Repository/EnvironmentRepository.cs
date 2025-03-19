@@ -17,6 +17,7 @@ public class EnvironmentRepository(IDbConnection connection) : IEnvironmentRepos
                            FROM environment_members m
                            JOIN environments e ON m.environment_id = e.id
                            WHERE m.member_id = @userId
+                           ORDER BY e.id DESC
                            LIMIT @count 
                            OFFSET @skip
                            """;
@@ -89,6 +90,7 @@ public class EnvironmentRepository(IDbConnection connection) : IEnvironmentRepos
                            FROM environment_members m
                            JOIN users u ON m.member_id = u.id
                            WHERE m.environment_id = @envId
+                           ORDER BY m.role
                            LIMIT @count
                            OFFSET @skip
                            """;

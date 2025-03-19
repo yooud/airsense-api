@@ -27,6 +27,7 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                                ORDER BY dd.device_id, dd.applied_at DESC, dd.value DESC
                            ) dd ON d.id = dd.device_id
                            WHERE d.room_id = @roomId
+                           ORDER BY d.id
                            LIMIT @count 
                            OFFSET @skip
                            """;
