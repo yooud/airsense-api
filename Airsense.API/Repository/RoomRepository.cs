@@ -8,83 +8,84 @@ namespace Airsense.API.Repository;
 
 public class RoomRepository(IDbConnection connection) : IRoomRepository
 {
-public async Task<ICollection<RoomDto>> GetAsync(int envId, int count, int skip)
-{
-    const string sql = """
-                       WITH latest_sensor_data AS (
-                           SELECT DISTINCT ON (sd.sensor_id, sd.parameter_id)
-                               sd.sensor_id,
-                               sd.parameter_id,
-                               sd.value,
-                               sd.timestamp,
-                               p.name AS parameter,
-                               p.unit,
-                               p.min_value,
-                               p.max_value
-                           FROM sensor_data sd
-                                    JOIN parameters p ON sd.parameter_id = p.id
-                           ORDER BY sd.sensor_id, sd.parameter_id DESC, sd.timestamp DESC
-                       ),
-                            latest_device_data AS (
-                                SELECT DISTINCT ON (dd.device_id)
-                                    dd.device_id,
-                                    dd.applied_at,
-                                    dd.value AS DeviceSpeed
-                                FROM device_data dd
-                                WHERE dd.applied_at IS NOT NULL
-                                ORDER BY dd.device_id, dd.applied_at DESC, dd.value DESC
-                            )
-                       SELECT
-                           r.id AS Id,
-                           r.name AS Name,
-                           MAX(ldd.DeviceSpeed) AS DeviceSpeed,
-                           lsd.parameter AS ParamKey,
-                           lsd.unit AS ParamUnit,
-                           lsd.min_value AS ParamMinValue,
-                           lsd.max_value AS ParamMaxValue,
-                           AVG(lsd.value) AS ParamValue
-                       FROM rooms r
-                                LEFT JOIN devices d ON r.id = d.room_id
-                                LEFT JOIN latest_device_data ldd ON d.id = ldd.device_id AND ldd.applied_at > NOW() - INTERVAL '1 minute'
-                                LEFT JOIN sensors s ON r.id = s.room_id
-                                LEFT JOIN latest_sensor_data lsd ON s.id = lsd.sensor_id AND lsd.timestamp > NOW() - INTERVAL '1 minute'
-                       WHERE r.environment_id = @envId
-                       GROUP BY r.id, r.name, lsd.parameter, lsd.unit, lsd.min_value, lsd.max_value
-                       ORDER BY r.id
-                       """;
+    public async Task<ICollection<RoomDto>> GetAsync(int envId, int skip, int count)
+    {
+        const string sql = """
+                           WITH latest_sensor_data AS (
+                               SELECT DISTINCT ON (sd.sensor_id, sd.parameter_id)
+                                   sd.sensor_id,
+                                   sd.parameter_id,
+                                   sd.value,
+                                   sd.timestamp,
+                                   p.name AS parameter,
+                                   p.unit,
+                                   p.min_value,
+                                   p.max_value
+                               FROM sensor_data sd
+                                        JOIN parameters p ON sd.parameter_id = p.id
+                               ORDER BY sd.sensor_id, sd.parameter_id DESC, sd.timestamp DESC
+                           ),
+                                latest_device_data AS (
+                                    SELECT DISTINCT ON (dd.device_id)
+                                        dd.device_id,
+                                        dd.applied_at,
+                                        dd.value AS DeviceSpeed
+                                    FROM device_data dd
+                                    WHERE dd.applied_at IS NOT NULL
+                                    ORDER BY dd.device_id, dd.applied_at DESC, dd.value DESC
+                                )
+                           SELECT
+                               r.id AS Id,
+                               r.name AS Name,
+                               MAX(ldd.DeviceSpeed) AS DeviceSpeed,
+                               lsd.parameter AS ParamKey,
+                               lsd.unit AS ParamUnit,
+                               lsd.min_value AS ParamMinValue,
+                               lsd.max_value AS ParamMaxValue,
+                               AVG(lsd.value) AS ParamValue
+                           FROM rooms r
+                                    LEFT JOIN devices d ON r.id = d.room_id
+                                    LEFT JOIN latest_device_data ldd ON d.id = ldd.device_id AND ldd.applied_at > NOW() - INTERVAL '1 minute'
+                                    LEFT JOIN sensors s ON r.id = s.room_id
+                                    LEFT JOIN latest_sensor_data lsd ON s.id = lsd.sensor_id AND lsd.timestamp > NOW() - INTERVAL '1 minute'
+                           WHERE r.environment_id = @envId
+                           GROUP BY r.id, r.name, lsd.parameter, lsd.unit, lsd.min_value, lsd.max_value
+                           ORDER BY r.id
+                           """;
 
-    var roomData = await connection.QueryAsync<RoomRawDto>(sql, new { envId });
+        var roomData = await connection.QueryAsync<RoomRawDto>(sql, new { envId });
 
-    var rooms = roomData
-        .GroupBy(r => new { r.Id, r.Name })
-        .Select(g => new RoomDto
-        {
-            Id = g.Key.Id,
-            Name = g.Key.Name,
-            DeviceSpeed = g.Max(x => x.DeviceSpeed),
-            Parameters = g
-                .Where(x => x.ParamKey is not null)
-                .Select(
-                    x => new ParameterDto
-                    {
-                        Name = x.ParamKey,
-                        Value = x.ParamValue.GetValueOrDefault(),
-                        MinValue = x.ParamMinValue.GetValueOrDefault(),
-                        MaxValue = x.ParamMaxValue.GetValueOrDefault(),
-                        Unit = x.ParamUnit
-                    }
-                ).ToList()
-        })
-        .Select(room =>
-        {
-            if (room.Parameters == null || room.Parameters.Count == 0)
-                room.Parameters = null;
-            return room;
-        });
+        var rooms = roomData
+            .GroupBy(r => new { r.Id, r.Name })
+            .Select(g => new RoomDto
+            {
+                Id = g.Key.Id,
+                Name = g.Key.Name,
+                DeviceSpeed = g.Max(x => x.DeviceSpeed),
+                Parameters = g
+                    .Where(x => x.ParamKey is not null)
+                    .Select(
+                        x => new ParameterDto
+                        {
+                            Name = x.ParamKey,
+                            Value = x.ParamValue.GetValueOrDefault(),
+                            MinValue = x.ParamMinValue.GetValueOrDefault(),
+                            MaxValue = x.ParamMaxValue.GetValueOrDefault(),
+                            Unit = x.ParamUnit
+                        }
+                    ).ToList()
+            })
+            .Select(room =>
+            {
+                if (room.Parameters == null || room.Parameters.Count == 0)
+                    room.Parameters = null;
+                return room;
+            })
+            .Skip(skip)
+            .Take(count);
 
-    return rooms.ToList();
-}
-
+        return rooms.ToList();
+    }
     
     public async Task<int> CountAsync(int envId)
     {

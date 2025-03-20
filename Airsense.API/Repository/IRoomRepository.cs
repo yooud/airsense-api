@@ -6,7 +6,7 @@ namespace Airsense.API.Repository;
 
 public interface IRoomRepository
 {
-    public Task<ICollection<RoomDto>> GetAsync(int envId, int count, int skip); 
+    public Task<ICollection<RoomDto>> GetAsync(int envId, int skip, int count); 
     
     public Task<int> CountAsync(int envId);
     
