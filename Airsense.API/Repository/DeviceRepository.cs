@@ -20,11 +20,10 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                            LEFT JOIN (
                                SELECT DISTINCT ON (dd.device_id)
                                    dd.device_id,
-                                   dd.applied_at,
+                                   dd.timestamp AS applied_at,
                                    dd.value AS DeviceSpeed
                                FROM device_data dd
-                               WHERE dd.applied_at IS NOT NULL
-                               ORDER BY dd.device_id, dd.applied_at DESC, dd.value DESC
+                               ORDER BY dd.device_id, dd.timestamp DESC, dd.value DESC
                            ) dd ON d.id = dd.device_id
                            WHERE d.room_id = @roomId
                            LIMIT @count 
@@ -139,7 +138,6 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                    LEFT JOIN device_data dd ON dd.device_id = d.id
                    WHERE d.room_id = @roomId
                    AND dd.timestamp BETWEEN @fromDate AND @toDate
-                   AND dd.applied = true
                    GROUP BY d.id, {intervalSql}
                    ORDER BY d.id, {intervalSql}
                    """;
@@ -194,7 +192,6 @@ public class DeviceRepository(IDbConnection connection) : IDeviceRepository
                    LEFT JOIN device_data dd ON dd.device_id = d.id
                    WHERE d.id = @deviceId
                    AND dd.timestamp BETWEEN @fromDate AND @toDate
-                   AND dd.applied = true
                    GROUP BY d.id, {intervalSql}
                    ORDER BY d.id, {intervalSql}
                    """;

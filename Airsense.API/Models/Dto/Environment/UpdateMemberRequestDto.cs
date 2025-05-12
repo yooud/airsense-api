@@ -7,6 +7,6 @@ public class UpdateMemberRequestDto
     public enum MemberRole
     {
         Admin,
-        Member
-    }
+        User
+    }  
 }
