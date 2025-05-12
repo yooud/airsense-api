@@ -28,11 +28,10 @@ public class RoomRepository(IDbConnection connection) : IRoomRepository
                                 latest_device_data AS (
                                     SELECT DISTINCT ON (dd.device_id)
                                         dd.device_id,
-                                        dd.applied_at,
+                                        dd.timestamp AS applied_at,
                                         dd.value AS DeviceSpeed
                                     FROM device_data dd
-                                    WHERE dd.applied_at IS NOT NULL
-                                    ORDER BY dd.device_id, dd.applied_at DESC, dd.value DESC
+                                    ORDER BY dd.device_id, dd.timestamp DESC, dd.value DESC
                                 )
                            SELECT
                                r.id AS Id,
