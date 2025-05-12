@@ -47,7 +47,8 @@ public class RoomController(
             return Forbid();
 
         var types = await roomRepository.GetAvailableTypesAsync(roomId);
-        if (!types.Any(p => p.Name.Equals(parameter)))
+        var type = types.FirstOrDefault(p => p.Name.Equals(parameter));
+        if (type is null)
             return BadRequest(new { message = "Parameter not found" });
         
         var curve = await settingsRepository.GetCurveAsync(roomId, parameter);
@@ -58,8 +59,8 @@ public class RoomController(
                 CriticalValue = null,
                 Points = new List<CurvePointDto>
                 {
-                    new() { Value = 0, FanSpeed = 0 },
-                    new() { Value = 30, FanSpeed = 100 }
+                    new() { Value = type.MinValue, FanSpeed = 0 },
+                    new() { Value = type.MaxValue, FanSpeed = 100 }
                 }
             };
             await settingsRepository.UpdateCurveAsync(roomId, parameter, curve);
